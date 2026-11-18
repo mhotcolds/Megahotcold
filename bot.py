@@ -8,7 +8,7 @@
 #   Files are deleted right after upload, so the disk never holds the whole folder.
 #
 # Required variables (Railway -> Variables): API_ID, API_HASH, BOT_TOKEN, ALLOWED_USERS
-# Optional: PARALLEL_DL (2), PARALLEL_UL (1), DISK_LIMIT_GB (0.55), BUFFER (2), WORK_DIR (/tmp/megabot)
+# Optional: PARALLEL_DL (2), PARALLEL_UL (1), DISK_LIMIT_GB (500), BUFFER (2), WORK_DIR (/tmp/megabot)
 import asyncio
 import base64
 import struct
