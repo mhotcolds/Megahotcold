@@ -76,7 +76,7 @@ ALLOWED = {int(x) for x in re.findall(r"-?\d+", os.environ.get("ALLOWED_USERS", 
 PARALLEL_DL = env_number("PARALLEL_DL", 2, 1, 8)
 PARALLEL_UL = env_number("PARALLEL_UL", 1, 1, 6)
 BUFFER = env_number("BUFFER", 2, 1, 20)
-DISK_LIMIT = int(env_number("DISK_LIMIT_GB", 0.55, 0.2, 500.0, float) * 1024 ** 3)
+DISK_LIMIT = int(env_number("DISK_LIMIT_GB", 500, 0.2, 500.0, float) * 1024 ** 3)
 WORK_DIR = Path(os.environ.get("WORK_DIR", "/tmp/megabot"))
 
 MAX_SIZE = 2000 * 1024 * 1024      # Telegram limit per file
