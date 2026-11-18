@@ -122,7 +122,7 @@ def fmt_size(n):
 
 def fmt_time(seconds):
     if seconds is None or seconds < 0 or math.isinf(seconds) or math.isnan(seconds):
-        return "—"
+        return "â€”"
     m, s = divmod(int(seconds), 60)
     h, m = divmod(m, 60)
     if h:
@@ -135,15 +135,15 @@ def fmt_time(seconds):
 def make_bar(pct, width=18):
     """Compact Telegram-friendly progress bar."""
     if pct is None:
-        return "▱" * width + "  --"
+        return "â–±" * width + "  --"
     pct = max(0.0, min(float(pct), 1.0))
     filled = min(width, int(pct * width + 0.5))
-    return "▰" * filled + "▱" * (width - filled) + f"  {pct * 100:.1f}%"
+    return "â–°" * filled + "â–±" * (width - filled) + f"  {pct * 100:.1f}%"
 
 
 def short(text, n=120):
     text = " ".join(str(text).split())
-    return text if len(text) <= n else text[: n - 1] + "…"
+    return text if len(text) <= n else text[: n - 1] + "â€¦"
 
 
 def is_quota(text):
@@ -252,6 +252,11 @@ class Budget:
         self.cond = asyncio.Condition()
 
     async def acquire(self, n):
+        if n > self.limit:
+            raise RuntimeError(
+                f"This file needs about {fmt_size(n)} temporary disk space, "
+                f"but the configured Railway disk budget is {fmt_size(self.limit)}."
+            )
         async with self.cond:
             while self.used > 0 and self.used + n > self.limit:
                 await self.cond.wait()
@@ -269,8 +274,8 @@ class Budget:
 def markup(job):
     return InlineKeyboardMarkup(
         [[
-            InlineKeyboardButton("🔄 Refresh", callback_data=f"refresh:{job.id}"),
-            InlineKeyboardButton("❌ Cancel", callback_data=f"cancel:{job.id}"),
+            InlineKeyboardButton("ðŸ”„ Refresh", callback_data=f"refresh:{job.id}"),
+            InlineKeyboardButton("âŒ Cancel", callback_data=f"cancel:{job.id}"),
         ]]
     )
 
@@ -294,55 +299,55 @@ def eta_seconds(job):
 
 
 def build_status(job):
-    total_txt = fmt_size(job.total) if job.total else "در حال محاسبه"
+    total_txt = fmt_size(job.total) if job.total else "Ø¯Ø± Ø­Ø§Ù„ Ù…Ø­Ø§Ø³Ø¨Ù‡"
     dl_pct = min(job.dl_now / job.total, 1.0) if job.total else None
     ul_pct = min(job.ul_now / job.total, 1.0) if job.total else None
     files_total = job.n_files if job.n_files else "?"
     overall = min(job.ul_now / job.total, 1.0) if job.total else None
     lines = [
-        f"🚀 MEGA → TELEGRAM  |  #{job.id}",
-        f"📁 حجم کل ویدئوها: {total_txt}   •   تعداد: {files_total}",
+        f"ðŸš€ MEGA â†’ TELEGRAM  |  #{job.id}",
+        f"ðŸ“ Ø­Ø¬Ù… Ú©Ù„ ÙˆÛŒØ¯Ø¦ÙˆÙ‡Ø§: {total_txt}   â€¢   ØªØ¹Ø¯Ø§Ø¯: {files_total}",
         "",
-        f"⬇️ دانلود  {make_bar(dl_pct)}",
-        f"   {fmt_size(job.dl_now)} / {total_txt}   •   {fmt_size(job.dl_speed)}/s",
-        f"⬆️ آپلود   {make_bar(ul_pct)}",
-        f"   {fmt_size(job.ul_now)} / {total_txt}   •   {fmt_size(job.ul_speed)}/s",
+        f"â¬‡ï¸ Ø¯Ø§Ù†Ù„ÙˆØ¯  {make_bar(dl_pct)}",
+        f"   {fmt_size(job.dl_now)} / {total_txt}   â€¢   {fmt_size(job.dl_speed)}/s",
+        f"â¬†ï¸ Ø¢Ù¾Ù„ÙˆØ¯   {make_bar(ul_pct)}",
+        f"   {fmt_size(job.ul_now)} / {total_txt}   â€¢   {fmt_size(job.ul_speed)}/s",
         "",
-        f"📦 فایل‌ها: دانلود {job.dl_files}/{files_total}  |  ارسال {job.ul_files}/{files_total}",
+        f"ðŸ“¦ ÙØ§ÛŒÙ„â€ŒÙ‡Ø§: Ø¯Ø§Ù†Ù„ÙˆØ¯ {job.dl_files}/{files_total}  |  Ø§Ø±Ø³Ø§Ù„ {job.ul_files}/{files_total}",
     ]
     for name, st in list(job.active_up.items())[:2]:
-        lines.append(f"   ↳ {short(name, 28)} · {st['cur'] * 100 / max(st['tot'], 1):.0f}%")
+        lines.append(f"   â†³ {short(name, 28)} Â· {st['cur'] * 100 / max(st['tot'], 1):.0f}%")
     if job.note:
         lines.append(job.note)
     lines += [
-        f"⏱ زمان باقی‌مانده: {fmt_time(eta_seconds(job))}",
-        f"⌛ زمان سپری‌شده: {fmt_time(time.time() - job.t0)}",
-        f"⚙️ حالت: {job.mode}",
+        f"â± Ø²Ù…Ø§Ù† Ø¨Ø§Ù‚ÛŒâ€ŒÙ…Ø§Ù†Ø¯Ù‡: {fmt_time(eta_seconds(job))}",
+        f"âŒ› Ø²Ù…Ø§Ù† Ø³Ù¾Ø±ÛŒâ€ŒØ´Ø¯Ù‡: {fmt_time(time.time() - job.t0)}",
+        f"âš™ï¸ Ø­Ø§Ù„Øª: {job.mode}",
     ]
     if overall is not None:
-        lines.insert(2, f"🎯 پیشرفت ارسال: {make_bar(overall, 14)}")
+        lines.insert(2, f"ðŸŽ¯ Ù¾ÛŒØ´Ø±ÙØª Ø§Ø±Ø³Ø§Ù„: {make_bar(overall, 14)}")
     return "\n".join(lines)
 
 
 def final_text(job):
     n = job.n_files or job.dl_files
     lines = [
-        f"{'❌' if job.fatal else '🏁'} Task [{job.id}] finished",
-        f"✅ Sent » {job.ul_files}/{n} files ({fmt_size(job.ul_done_bytes)})",
-        f"⏱ Time » {fmt_time(time.time() - job.t0)}",
+        f"{'âŒ' if job.fatal else 'ðŸ'} Task [{job.id}] finished",
+        f"âœ… Sent Â» {job.ul_files}/{n} files ({fmt_size(job.ul_done_bytes)})",
+        f"â± Time Â» {fmt_time(time.time() - job.t0)}",
     ]
     if job.fatal:
-        lines.append(f"❌ {job.fatal}")
+        lines.append(f"âŒ {job.fatal}")
     if job.quota_hit:
-        lines.append("🚫 MEGA transfer quota exceeded. The limit is per IP address; try again in a few hours.")
+        lines.append("ðŸš« MEGA transfer quota exceeded. The limit is per IP address; try again in a few hours.")
     if job.skipped:
-        lines.append(f"⏭ {job.skipped} files were skipped because of the quota.")
+        lines.append(f"â­ {job.skipped} files were skipped because of the quota.")
     if job.failed:
-        lines.append(f"⚠️ Failed ({len(job.failed)}):")
+        lines.append(f"âš ï¸ Failed ({len(job.failed)}):")
         for name, why in job.failed[:10]:
-            lines.append(f"• {short(name, 40)} — {short(why, 60)}")
+            lines.append(f"â€¢ {short(name, 40)} â€” {short(why, 60)}")
         if len(job.failed) > 10:
-            lines.append(f"… and {len(job.failed) - 10} more")
+            lines.append(f"â€¦ and {len(job.failed) - 10} more")
     if not job.fatal and not job.dl_files and not job.failed and not job.quota_hit:
         lines.append("No video files were found in this link.")
     return "\n".join(lines)
@@ -547,25 +552,63 @@ async def prepare(job, src, stem, orig_name):
 # ------------------------------------------------------------------ MEGA: listing & download
 
 
-def parse_megals_long_line(line):
-    """Return (handle, node_type, size, path) from one megals -l row.
+def parse_size_token(token):
+    """Parse a megals size token. Normal mode is integer bytes; human units are tolerated."""
+    token = str(token or "").strip()
+    if not token or token == "-":
+        return None
+    if token.isdigit():
+        return int(token)
+    m = re.fullmatch(r"(\d+(?:\.\d+)?)\s*([KMGT]i?B)", token, re.IGNORECASE)
+    if not m:
+        return None
+    value = float(m.group(1))
+    unit = m.group(2).upper()
+    power = {"KB": 1, "KIB": 1, "MB": 2, "MIB": 2,
+             "GB": 3, "GIB": 3, "TB": 4, "TIB": 4}.get(unit)
+    return int(value * (1024 ** power)) if power is not None else None
 
-    megatools may print either HANDLE TYPE SIZE DATE TIME PATH or
-    HANDLE PARENT TYPE SIZE DATE TIME PATH. The path may contain spaces.
+
+def parse_megals_long_line(line):
+    """Parse one documented `megals -l` row into (handle, node_type, size, path).
+
+    Supported layouts:
+      HANDLE OWNER TYPE SIZE YYYY-MM-DD HH:MM:SS PATH
+      HANDLE        TYPE SIZE YYYY-MM-DD HH:MM:SS PATH
+
+    `megals -h` human-readable sizes are also tolerated, although the bot deliberately
+    invokes megals without `-h` so byte counts remain exact.
     """
-    m = MEGA_DATE_RE.match(line.strip())
+    line = str(line or "").strip()
+    if not line or line.startswith("=") or line.lower().startswith("handle "):
+        return None
+    m = MEGA_DATE_RE.match(line)
     if not m:
         return None
     handle, columns, _date, _clock, remote_path = m.groups()
     fields = columns.split()
     if len(fields) < 2:
         return None
+    # In byte mode TYPE and SIZE are the final two fields. In optional human mode,
+    # SIZE is split into a number and unit (for example: TYPE 2.6 KiB).
+    if len(fields) >= 3 and re.fullmatch(r"[KMGT]i?B", fields[-1], re.IGNORECASE):
+        type_token, size_token = fields[-3], fields[-2] + " " + fields[-1]
+    else:
+        type_token, size_token = fields[-2], fields[-1]
     try:
-        node_type = int(fields[-2])
-        size = int(fields[-1])
-    except ValueError:
+        node_type = int(type_token)
+    except (TypeError, ValueError):
         return None
-    return handle, node_type, size, remote_path.strip()
+    size = parse_size_token(size_token)
+    # Directories have '-' as size. File rows must have a valid numeric size.
+    if node_type == 0 and size is None:
+        return None
+    if node_type not in (0, 1, 2):
+        return None
+    remote_path = remote_path.strip()
+    if not remote_path:
+        return None
+    return handle, node_type, (size or 0), remote_path
 
 
 def normalize_remote_path(value):
@@ -577,7 +620,7 @@ def normalize_remote_path(value):
 async def list_remote(job):
     """List eligible videos and obtain their exported URLs and exact sizes."""
     rows = []
-    rc, out, err = await run_proc(job, "megals", "-l", "-R", job.link, timeout=180)
+    rc, out, err = await run_proc(job, "megals", "--header", "-l", "-R", job.link, timeout=180)
     if is_quota(err):
         job.quota_hit = True
     if rc != 0:
@@ -586,7 +629,7 @@ async def list_remote(job):
 
     seen = set()
     unparsed = []
-    raw_lines = out.decode("utf-8", "replace").splitlines()
+    raw_lines = out.decode("utf-8", "replace").splitlines() if isinstance(out, (bytes, bytearray)) else str(out).splitlines()
     for line in raw_lines:
         parsed = parse_megals_long_line(line)
         if not parsed:
@@ -602,9 +645,9 @@ async def list_remote(job):
         seen.add(key)
         rows.append((remote_path, size, handle))
 
-    if unparsed:
-        log.warning("megals: %d raw lines; %d video rows parsed; sample unparsed rows: %s",
-                    len(raw_lines), len(rows), " | ".join(unparsed))
+    if unparsed or not rows:
+        log.warning("megals listing diagnostic: %d raw lines; %d video rows parsed; sample rows: %s",
+                    len(raw_lines), len(rows), " | ".join(unparsed or [short(x, 220) for x in raw_lines[:5]]))
     log.info("MEGA listing parsed: %d video files, %d bytes total",
              len(rows), sum(max(0, row[1]) for row in rows))
     if not rows or job.quota_hit:
@@ -616,7 +659,8 @@ async def list_remote(job):
     if is_quota(err):
         job.quota_hit = True
     if rc == 0:
-        for line in out.decode("utf-8", "replace").splitlines():
+        export_lines = out.decode("utf-8", "replace").splitlines() if isinstance(out, (bytes, bytearray)) else str(out).splitlines()
+        for line in export_lines:
             m = EXPORT_RE.match(line.strip())
             if m:
                 urls[normalize_remote_path(m.group(2))] = m.group(1)
@@ -746,34 +790,31 @@ async def produce_files(job, items, tmp, upq):
 
 
 async def throttle(job, dest, holder):
-    """Pauses the whole-folder download while the disk is full and uploads can still free space."""
-    paused = False
+    """Protect Railway's small ephemeral disk during whole-folder fallback.
+
+    Fallback does not stream files to uploaders until megadl exits, so pausing the
+    downloader to wait for uploads would deadlock. Instead, stop it safely once
+    the configured disk budget is reached.
+    """
     try:
         while True:
-            await asyncio.sleep(3)
+            await asyncio.sleep(2)
             if not holder:
                 continue
             proc = holder[0]
             if proc.returncode is not None:
                 return
             used = dir_size(dest)
-            if not paused and used > DISK_LIMIT and job.inflight > 0:
-                proc.send_signal(signal.SIGSTOP)
-                paused = True
-                job.note = "⏸ Waiting for uploads to free disk space"
-            elif paused and (used < DISK_LIMIT * 0.6 or job.inflight == 0):
-                proc.send_signal(signal.SIGCONT)
-                paused = False
-                job.note = ""
+            if used >= DISK_LIMIT:
+                job.fatal = (
+                    f"Whole-folder download stopped to protect disk space: used "
+                    f"{fmt_size(used)} (limit {fmt_size(DISK_LIMIT)}). "
+                    "Use per-file mode or increase available disk space."
+                )
+                kill_proc(proc)
+                return
     except ProcessLookupError:
-        pass
-    finally:
-        job.note = ""
-        if paused:
-            try:
-                holder[0].send_signal(signal.SIGCONT)
-            except Exception:
-                pass
+        return
 
 
 async def produce_folder(job, tmp, upq):
@@ -783,6 +824,15 @@ async def produce_folder(job, tmp, upq):
     download tree and cannot enqueue a growing/partial file while megadl writes it.
     The trade-off is that fallback uploads start only after the folder download ends.
     """
+    # Whole-folder fallback needs the complete folder on local disk. On Railway's
+    # small ephemeral disk, fail safely rather than filling the container filesystem.
+    if job.total > 0 and job.total > DISK_LIMIT:
+        job.fatal = (
+            f"Per-file MEGA download failed. Whole-folder fallback needs "
+            f"{fmt_size(job.total)} but the configured disk budget is {fmt_size(DISK_LIMIT)}. "
+            "Increase DISK_LIMIT_GB or use a server with more disk space."
+        )
+        return
     dest = tmp / "all"
     dest.mkdir(parents=True, exist_ok=True)
     job.folder_dest = dest
@@ -980,7 +1030,7 @@ async def process(job):
     watcher = asyncio.create_task(monitor(job))
     uploaders = []
     try:
-        job.mode = "بررسی فایل‌ها و حجم پوشه"
+        job.mode = "Ø¨Ø±Ø±Ø³ÛŒ ÙØ§ÛŒÙ„â€ŒÙ‡Ø§ Ùˆ Ø­Ø¬Ù… Ù¾ÙˆØ´Ù‡"
         await safe_edit(job, build_status(job))
         items = [] if job.single else await list_remote(job)
         # Keep listing totals even when per-file export links are unavailable and
@@ -999,14 +1049,14 @@ async def process(job):
         uploaders = [asyncio.create_task(uploader(job, upq)) for _ in range(PARALLEL_UL)]
 
         if items:
-            job.mode = f"تکی ×{PARALLEL_DL}"
+            job.mode = f"ØªÚ©ÛŒ Ã—{PARALLEL_DL}"
             result = await produce_files(job, items, tmp, upq)
         else:
             result = "fallback"
         if result == "fallback":
             if items:
                 log.warning("per-file download did not work; switching to whole-folder mode")
-            job.mode = "کل پوشه"
+            job.mode = "Ú©Ù„ Ù¾ÙˆØ´Ù‡"
             job.failed.clear()
             for sub in tmp.iterdir():
                 shutil.rmtree(sub, ignore_errors=True)
@@ -1017,7 +1067,7 @@ async def process(job):
         await asyncio.gather(*uploaders)
         await safe_edit(job, final_text(job), final=True)
         try:
-            await job.message.reply_text(f"✅ Task [{job.id}] finished: {job.ul_files} file(s) sent.")
+            await job.message.reply_text(f"âœ… Task [{job.id}] finished: {job.ul_files} file(s) sent.")
         except Exception:
             pass
     finally:
@@ -1041,7 +1091,7 @@ async def worker():
                 await job.task
             except asyncio.CancelledError:
                 if job.cancelled:
-                    await safe_edit(job, f"🚫 Task [{job.id}] cancelled.", final=True)
+                    await safe_edit(job, f"ðŸš« Task [{job.id}] cancelled.", final=True)
                 else:
                     raise
             except Exception as e:
@@ -1049,7 +1099,7 @@ async def worker():
                 msg = str(e)
                 if isinstance(e, FileNotFoundError):
                     msg = f"a required tool is missing ({e})"
-                await safe_edit(job, f"❌ Task [{job.id}] failed: {short(msg)}", final=True)
+                await safe_edit(job, f"âŒ Task [{job.id}] failed: {short(msg)}", final=True)
         finally:
             job.done = True
             jobs.pop(job.id, None)
@@ -1068,7 +1118,7 @@ def cancel_job(job):
 # ------------------------------------------------------------------ Telegram handlers
 
 NOT_ALLOWED = (
-    "⛔ You are not authorized to use this bot.\n"
+    "â›” You are not authorized to use this bot.\n"
     "Your user id: {uid}\n"
     "The owner must add it to ALLOWED_USERS on the server."
 )
@@ -1107,7 +1157,7 @@ async def on_text(client, message):
             break
         job = Job(message, link, single)
         position = queue.qsize() + (1 if state["current"] else 0)
-        label = f"📥 [{job.id}] Queued. Position: {position + 1}" if position else f"⏳ [{job.id}] Starting..."
+        label = f"ðŸ“¥ [{job.id}] Queued. Position: {position + 1}" if position else f"â³ [{job.id}] Starting..."
         job.status = await message.reply_text(label, quote=True, reply_markup=markup(job))
         jobs[job.id] = job
         await queue.put(job)
@@ -1136,7 +1186,7 @@ async def on_cancel(client, cq):
     if job.task is None:  # still waiting in the queue
         job.done = True
         jobs.pop(job.id, None)
-        await safe_edit(job, f"🚫 Task [{job.id}] cancelled.", final=True)
+        await safe_edit(job, f"ðŸš« Task [{job.id}] cancelled.", final=True)
     await cq.answer("Cancelled")
 
 
