@@ -3,7 +3,6 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-# MEGA downloader + ffmpeg (thumbnails, mp4 conversion, splitting big files)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     megatools \
     ffmpeg \
@@ -11,7 +10,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt \
     && (pip install --no-cache-dir tgcrypto-pyrofork \
@@ -19,5 +17,4 @@ RUN pip install --no-cache-dir -r requirements.txt \
         || echo "tgcrypto not installed (the bot still works, just a bit slower)")
 
 COPY bot.py .
-
 CMD ["python", "bot.py"]

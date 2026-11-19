@@ -1,36 +1,19 @@
-MEGA metadata update for Railway
-================================
+MEGA -> Telegram bot update
 
-Files to commit to the same GitHub repository:
-  - bot.py
-  - requirements.txt
+Download architecture:
+- mega-public-client: public folder metadata and file-key extraction only.
+- megadl (megatools): actual per-file downloads.
+- Pyrofork: Telegram uploads.
+- FFmpeg/ffprobe: media inspection, thumbnailing, remuxing and splitting.
 
-The new metadata reader uses mega-public-client for public MEGA folder links.
-It does NOT require a MEGA account email or password. The old `megals` call
-has been removed from folder listing, because it was querying account storage
-and produced the username-required error in Railway logs.
-
-Railway deployment:
-  1. Replace bot.py with this version.
-  2. Add/replace requirements.txt with the supplied file so Railway installs
-     mega-public-client==0.1.1 alongside Pyrofork and TgCrypto.
-  3. Redeploy.
-  4. Check logs for: "Public MEGA folder metadata: nodes=... videos=..."
-
-Expected behavior:
-  - Folder metadata is read before downloads start.
-  - Video sizes are summed from MEGA metadata (no file content is downloaded
-    for this calculation).
-  - If a file size is unknown, the bot does not present a partial sum as the
-    total. It shows the total as unknown.
-  - If any per-file decryption key cannot be represented as a standalone
-    public file URL, the bot uses its existing whole-folder fallback rather
-    than silently skipping that file.
-
-Validation performed in this environment:
-  - Python syntax compilation passed.
-  - Local mapping tests passed for root files, nested files, non-video files,
-    and a video with unknown size.
-  - A live request to MEGA and a Railway deployment test were NOT possible
-    here. The first deployment log is required to confirm the SDK model and
-    direct per-file link compatibility with your specific public folder.
+Important:
+1. Deploy with the included Dockerfile so the megatools package (megadl binary) is installed.
+2. Keep mega-public-client==0.1.1 in requirements.txt; it is still used for metadata.
+3. Whole-folder fallback is intentionally disabled. It can require the full folder size on Railway's ephemeral disk.
+4. Initial conservative variables:
+   PARALLEL_DL=2
+   PARALLEL_UL=1
+   DISK_LIMIT_GB=500
+   BUFFER=2
+5. DISK_LIMIT_GB is only a logical scheduling ceiling; it does not increase actual Railway disk capacity.
+6. This code has passed Python syntax compilation. A live MEGA download test must still be performed on Railway.
