@@ -779,7 +779,10 @@ def _folder_nodes_to_remote(folder_info):
                 name, _key_shape(raw_key),
                 sorted(list(vars(node).keys()))[:20] if hasattr(node, "__dict__") else type(node).__name__,
             )
-        url = f"https://mega.nz/file/{handle}#{key}" if key else ""
+        # megatools versions commonly shipped on Debian/Railway do not reliably
+        # accept MEGA's modern /file/<handle>#<key> URL form. Use the legacy
+        # exported-file form understood by megadl: /#!<handle>!<key>.
+        url = f"https://mega.co.nz/#!{handle}!{key}" if key else ""
         # Keep zero/unknown sizes in the manifest. The caller will refuse to
         # publish a misleading total instead of silently dropping these files.
         result.append(Remote(path, size, handle, url))
@@ -852,7 +855,14 @@ async def download_one(job, item, folder):
                 if len(candidates) == 1 and candidates[0].stat().st_size > 0:
                     return candidates[0], ""
                 raise RuntimeError("megadl exited successfully but the downloaded file was not found")
-            last_err = short(err.strip().splitlines()[-1] if err.strip() else f"megadl exited with code {rc}")
+            stderr_text = err.strip()
+            last_err = short(stderr_text.splitlines()[-1] if stderr_text else f"megadl exited with code {rc}")
+            # Keep the actual CLI reason in Railway logs, but never log the
+            # public URL because it contains the decryption key.
+            log.warning(
+                "megadl failed: file=%s rc=%s stderr_tail=%s",
+                Path(item.path).name, rc, short(stderr_text, 500) if stderr_text else "<empty>"
+            )
         except asyncio.CancelledError:
             raise
         except Exception as exc:
