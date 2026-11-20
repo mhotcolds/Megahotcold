@@ -1,3 +1,2 @@
-pyrofork>=2.3.45
-TgCrypto>=1.2.5
+pyrofork
 mega-public-client==0.1.1
